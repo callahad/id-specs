@@ -207,7 +207,6 @@ For example:
         "authority": "otherexample.com"
      }
 
-
 Web-Site Signin Flow
 --------------------
 
@@ -320,7 +319,6 @@ The argument is an options block which may contain the following properties:
 
 A function that should be invoked when a user wishes to logout of the current site (for instance, when clicking on an in-content logout button).
 Will cause the `onlogout` callback passed to `navigator.id.watch()` to be invoked.
-
 
 Identity Provisioning Flow
 --------------------------
