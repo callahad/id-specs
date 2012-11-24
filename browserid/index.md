@@ -40,8 +40,8 @@ Terms
   <dd>An Identity Assertion combined with the requisite Identity Certificates that enable a Relying Party to fully verify the Identity Assertion.</dd>
 </dl>
 
-Objects / Messages
-------------------
+Data Formats
+------------
 
 When possible, BrowserID defines messages using the [JavaScript Object Signing and Encryption (JOSE) specifications](http://www.ietf.org/dyn/wg/charter/jose-charter) for signing JSON-formatted objects.
 However, because JOSE is still in active development, and due to historical accidents, the BrowserID protocol makes decisions that may diverge from the current JOSE spec.
