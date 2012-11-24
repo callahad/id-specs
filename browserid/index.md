@@ -15,6 +15,11 @@ A centralized fallback is provided to bootstrap users with email addresses at do
 Terms
 -----
 
+> __NOTE__:
+> For convenience of notation, this document often refers to "email addresses."
+> In all cases, this should be understood to mean a user identifier in the form of `user@domain`.
+> The BrowserID protocol *does not* require that these identifiers be SMTP-routable, though it is *strongly recommended*.
+
 <dl>
   <dt>Identity</dt>
   <dd>An email address controlled by the user.</dd>
