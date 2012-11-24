@@ -1,7 +1,8 @@
-BrowserID
-=========
+The BrowserID Protocol
+======================
 
-This is the _Beta1_ BrowserID specification, going live at `https://login.persona.org` in September 2012.
+This is the _Beta1_ BrowserID specification.
+In September 2012, services at https://login.persona.org/ began using this version of the protocol.
 
 Overview
 --------
