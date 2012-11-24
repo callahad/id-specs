@@ -7,10 +7,10 @@ In September 2012, services at https://login.persona.org/ began using this versi
 Overview
 --------
 
-This specification, BrowserID, defines a mechanism for websites to request, from the user via her user-agent, a signed assertion of email-address ownership.
+This specification defines a mechanism for websites to request, from the user via her user-agent, a signed assertion of email address ownership.
 Web sites can use this mechanism to register users on their first visit and log them back in on subsequent visits.
-The trust path for these assertions of email-address ownership is federated: individual domains can certify their own users.
-A fallback identity provider is provided to bootstrap users with email addresses at domains that do not yet support the protocol.
+The trust path for these assertions of email address ownership is federated: individual domains can certify their own users.
+A centralized fallback is provided to bootstrap users with email addresses at domains that do not yet support this protocol.
 
 Terms
 -----
