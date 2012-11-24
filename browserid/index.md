@@ -281,9 +281,10 @@ This means that there are three possible sequences of callabacks:
       navigator.id.logout(); // this will cause `onlogout` to be invoked.
     };
 
-### API
+API: Relying Parties
+--------------------
 
-#### navigator.id.watch(&lt;options&gt;);
+### navigator.id.watch(&lt;options&gt;);
 
 Register callbacks to be notified when the user logs in or out.
 The option block has the following properties:
@@ -300,7 +301,7 @@ The option block has the following properties:
   * `onready` *(optional)* - A callback that will always be called once the navigator.id service is initialized (after `onlogin` or `onlogout` have been called).
     By waiting to display UI until this point, you can avoid UI flicker in the case where your session is out of sync with BrowserID.
 
-#### navigator.id.request(&lt;options&gt;);
+### navigator.id.request(&lt;options&gt;);
 
 Request an identity from the user.
 This will cause a dialog to be opened to prompt the user for an email address to use to log into the site.
@@ -315,7 +316,7 @@ The argument is an options block which may contain the following properties:
     When provided, a link will be displayed in the sign-in dialog.
   * `oncancel` - a callback that will be invoked if the user refuses to share an identity with the site.
 
-#### navigator.id.logout();
+### navigator.id.logout();
 
 A function that should be invoked when a user wishes to logout of the current site (for instance, when clicking on an in-content logout button).
 Will cause the `onlogout` callback passed to `navigator.id.watch()` to be invoked.
