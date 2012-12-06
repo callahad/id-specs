@@ -49,12 +49,12 @@ Terms
 Data Formats
 ------------
 
-When possible, BrowserID defines messages using the [JavaScript Object Signing and Encryption (JOSE) specifications](http://www.ietf.org/dyn/wg/charter/jose-charter) for signing JSON-formatted objects.
-However, because JOSE is still in active development, and due to historical accidents, the BrowserID protocol makes decisions that may diverge from the current JOSE spec.
-Later versions of the protocol are expected to match JOSE more closely.
+> __NOTE__:
+> The BrowserID data formats are inspired by the [JavaScript Object Signing and Encryption (JOSE) specifications][JOSE].
+> However, because JOSE is still in active development, and due to historical accidents, the BrowserID protocol makes decisions that diverge from the current JOSE specs.
+> Later versions of the BrowserID protocol are expected to more closely match JOSE.
 
-Future messages will contain a "version" property to distinguish their format from this initial specification.
-
+[JOSE]: http://www.ietf.org/dyn/wg/charter/jose-charter
 
 ### Public Key
 
