@@ -21,29 +21,29 @@ Terms
 > The BrowserID protocol *does not* require that these identifiers be SMTP-routable, though it is *strongly recommended*.
 
 <dl>
-  <dt>Identity</dt>
-  <dd>An email address controlled by the user.</dd>
-
   <dt>Public Key</dt>
   <dd>The public portion of an asymmetric cryptographic keypair used in a digital signature algorithm.</dd>
 
+  <dt>Identity</dt>
+  <dd>An email address controlled by the user.</dd>
+
   <dt>Identity Certificate</dt>
   <dd>A digitally signed statement that binds a given Public Key to a given Identity.</dd>
-
-  <dt>Identity Provider</dt>
-  <dd>A signer of Identity Certificates for Identities that are directly within its own domain, e.g, `example.com` certifies `*@example.com`, or within another domain that has explicitly delegated its authority to this Identity Provider.</dd>
-
-  <dt>Fallback Identity Provider</dt>
-  <dd>A signer of Identity Certificates for Identities within domains that are not themselves Identity Providers, and which have not delegated authority to any other Identity Provider.</dd>
-
-  <dt>Audience / Relying Party</dt>
-  <dd>A system, typically a web site, that needs to verify an Identity.</dd>
 
   <dt>Identity Assertion</dt>
   <dd>A digitally signed statement indicating a request to login to a particular Relying Party as a specific Identity.</dd>
 
   <dt>Backed Identity Assertion</dt>
   <dd>An Identity Assertion combined with the requisite Identity Certificates that enable a Relying Party to fully verify the Identity Assertion.</dd>
+
+  <dt>Identity Provider</dt>
+  <dd>A signer of Identity Certificates for Identities that are directly within its own domain, e.g., `example.com` certifies `*@example.com`, or within another domain that has explicitly delegated its authority to this Identity Provider.</dd>
+
+  <dt>Fallback Identity Provider</dt>
+  <dd>A signer of Identity Certificates for Identities within domains that are not themselves Identity Providers, and which have not delegated authority to any other Identity Provider.</dd>
+
+  <dt>Audience / Relying Party</dt>
+  <dd>A system, typically a web site, that needs to verify an Identity.</dd>
 </dl>
 
 Data Formats
