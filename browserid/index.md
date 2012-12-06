@@ -43,7 +43,7 @@ Terms
   <dd>A signer of Identity Certificates for Identities within domains that are not themselves Identity Providers, and which have not delegated authority to any other Identity Provider.</dd>
 
   <dt>Audience / Relying Party</dt>
-  <dd>A system, typically a web site, that needs to verify an Identity.</dd>
+  <dd>A system, typically a web site, that accepts and needs to verify Backed Identity Assertions.</dd>
 </dl>
 
 Data Formats
