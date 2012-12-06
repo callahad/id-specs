@@ -21,8 +21,8 @@ Terms
 > The BrowserID protocol *does not* require that these identifiers be SMTP-routable, though it is *strongly recommended*.
 
 <dl>
-  <dt>Public Key</dt>
-  <dd>The public portion of an asymmetric cryptographic keypair used in a digital signature algorithm.</dd>
+  <dt>Public / Private Keys</dt>
+  <dd>The components of asymmetric cryptographic keypairs used in digital signature algorithms.</dd>
 
   <dt>Identity</dt>
   <dd>An email address controlled by the user.</dd>
