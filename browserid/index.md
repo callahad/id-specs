@@ -74,28 +74,52 @@ For example, a public key may look like this:
 
 ### Identity Certificate
 
-An Identity Certificate is a signed JSON Web Token (JWT)-like object.
-This starts with a JWT Header.
-BrowserID currently omits the `typ` field in the JWT Header, so a typical header looks like:
+Identity Certificates are based on an early [JSON Web Token (JWT)](http://self-issued.info/docs/draft-jones-json-web-token-04.html) draft.
+
+Identity Certificates are signed objects with three components:
+
+1. A JSON header
+2. A JSON payload
+3. A digital signature
+
+Identity Certificates are signed and serialized as follows:
+
+1. The header and payload are independently serialized to strings, base64url-encoded (which uses `-` and `_` instead of `+` and `/`), and stripped of any trailing padding characters (`=`).
+2. The two serialized-and-encoded parts are concatenated together with a single `.` to create a `header.payload` string.
+3. The `header.payload` string is passed as an array of bytes into the digital signature algorithm defined in the header itself.
+4. The byte array returned by the signature algorithm is base64url-encoded and stripped of any trailing padding.
+5. The encoded signature is appended to the `header.payload` string with another `.`, creating the final `header.payload.signature` string.
+
+See Appendix B for an algorithm to re-add padding when parsing the base64url-encoded strings.
+
+#### The Header
+
+> TODO: Come up with a better way to refer to the "256" part of "RS256" and review this section.
+
+An Identity Certificate's header is a JSON object with a single property, `"alg"`, which describes the key type and size used to sign the message.
+A typical header looks like:
 
     {"alg": "RS256"}
 
-This indicates that the Identity Certificate is signed by an RSA key with a 256-bit security level (i.e. 2048-bit modulus).
+See Appendix A for supported algorithms and key sizes(?).
 
-The JWT Claims Set contains the following claims:
+#### The Payload
 
+An Identity Certificate's payload is a JSON object containing the following properties ("claims"):
+
+* `iss`: the domain of the issuer
 * `iat`: the "issued-at" time, when the certificate becomes valid (in milliseconds-since-epoch)
-* `exp`: the expiration time, as per JWT, when the certificate ceases being valid (milliseconds-since-epoch)
-* `iss` the domain of the issuer as per JWT
-* `public-key` the serialized public key as defined above
-* `principal` the principal being certified.
+* `exp`: the expiration time, when the certificate ceases being valid (in milliseconds-since-epoch)
+* `principal`: the principal being certified
+* `public-key`: the principal's serialized public key, as defined above
 
-The principal is a JSON object that indicates the type of principal.
-The only value currently accepted is an email address, e.g.
+The principal is a JSON object that describes what this certificate attests to.
+Currently, the only valid principal is an Identity, which is stored under a key named `"email"`.
+For example, a principal may look like:
 
     {"email": "bob@example.com"}
 
-A complete JWT set of claims then looks like:
+And a complete payload may look like:
 
     {
       "iss": "mockmyid.com",
@@ -111,16 +135,15 @@ A complete JWT set of claims then looks like:
       }
     }
 
-Which, when signed, becomes a base64url-encoded data structure (using `_-` instead of `+/`) which looks like the following (with linebreaks added for easier reading; the full string has exactly two periods and no whitespace):
+With the addition of a header and signature, the Identity Certificate becomes a base64url-encoded string which looks like the following (with line breaks added for easier reading):
 
     eyJhbGciOiJSUzI1NiJ9
-    .eyJwdWJsaWMta2V5Ijp7ImFsZ29yaXRobSI6IkRTIiwieSI6IjJiMGI2ZjQ0ZjU4ZWM0ZmQ1MDQzYmU2YzY4NDMzYmM4MzliYjg2NzI3NmY5MGE5YzdhNjgwNzEwOTcxNjdkMmNhYjJkZjUzYWE1YWU5Mjg4NDNkMTVhNDI0MTIxMjNlZTI0YzQwNjdkN2I4NTg3ODUwZDFmMDlmYTM5Y2M1YmI1MmY4Yjg4NDRjMzEzMjQ0MGYyZTQ1NWFlYTgyMzU1MzViMjhhOGYwMTU4ODIwOWYxNDVlZTFmMjY1MjU3ZmU5OTk5YmM5MDU0N2JhOTg1MDUyYWQ0ZmIzMjBmYjkxNTM4NzgxNjRiZjM1NzJkYzVjNGZlNDkzZTY2NTA2ZjJiMDQiLCJwIjoiZmY2MDA0ODNkYjZhYmZjNWI0NWVhYjc4NTk0YjM1MzNkNTUwZDlmMWJmMmE5OTJhN2E4ZGFhNmRjMzRmODA0NWFkNGU2ZTBjNDI5ZDMzNGVlZWFhZWZkN2UyM2Q0ODEwYmUwMGU0Y2MxNDkyY2JhMzI1YmE4MWZmMmQ1YTViMzA1YThkMTdlYjNiZjRhMDZhMzQ5ZDM5MmUwMGQzMjk3NDRhNTE3OTM4MDM0NGU4MmExOGM0NzkzMzQzOGY4OTFlMjJhZWVmODEyZDY5YzhmNzVlMzI2Y2I3MGVhMDAwYzNmNzc2ZGZkYmQ2MDQ2MzhjMmVmNzE3ZmMyNmQwMmUxNyIsInEiOiJlMjFlMDRmOTExZDFlZDc5OTEwMDhlY2FhYjNiZjc3NTk4NDMwOWMzIiwiZyI6ImM1MmE0YTBmZjNiN2U2MWZkZjE4NjdjZTg0MTM4MzY5YTYxNTRmNGFmYTkyOTY2ZTNjODI3ZTI1Y2ZhNmNmNTA4YjkwZTVkZTQxOWUxMzM3ZTA3YTJlOWUyYTNjZDVkZWE3MDRkMTc1ZjhlYmY2YWYzOTdkNjllMTEwYjk2YWZiMTdjN2EwMzI1OTMyOWU0ODI5YjBkMDNiYmM3ODk2YjE1YjRhZGU1M2UxMzA4NThjYzM0ZDk2MjY5YWE4OTA0MWY0MDkxMzZjNzI0MmEzODg5NWM5ZDViY2NhZDRmMzg5YWYxZDdhNGJkMTM5OGJkMDcyZGZmYTg5NjIzMzM5N2EifSwicHJpbmNpcGFsIjp7ImVtYWlsIjoid2FybmVyQG1vY2tteWlkLmNvbSJ9LCJpYXQiOjEzNDc5OTQ0MDE0MDEsImV4cCI6MTM0Nzk5ODAwMTQwMSwiaXNzIjoibW9ja215aWQuY29tIn0
-    .ddZEPpT3E1BdZfOLABoRZhvnKidzpU8jj0XLUTrbq7khtOqSwVUCk4nYCgIiy73cHLemInurE8Fm_4uwUw27fJ8nP4IM7BBe_5deBEEIAx5I_ckru5JfsSITbmMx-dw5-A8aTsjYnr_amPj1QfELhXKd0F59DQvFm_kiWsZzygmaLh5DGzJqPcqIJDUh6R35Brg6stlwJSXJHtMkXQ7khjStKiN822RjmSOAYUMfMZwe8r-Y3TxmLDeVcNpbjXEy7p2TGdYLuBc9072JHN0y3riuu7DiG4TLZ83SMtzwnyBzBuMRN0gX_JRxEfBkeeEfDpOJ4JAzHeiRTExAoEkpSQ
+    .
+    eyJwdWJsaWMta2V5Ijp7ImFsZ29yaXRobSI6IkRTIiwieSI6IjJiMGI2ZjQ0ZjU4ZWM0ZmQ1MDQzYmU2YzY4NDMzYmM4MzliYjg2NzI3NmY5MGE5YzdhNjgwNzEwOTcxNjdkMmNhYjJkZjUzYWE1YWU5Mjg4NDNkMTVhNDI0MTIxMjNlZTI0YzQwNjdkN2I4NTg3ODUwZDFmMDlmYTM5Y2M1YmI1MmY4Yjg4NDRjMzEzMjQ0MGYyZTQ1NWFlYTgyMzU1MzViMjhhOGYwMTU4ODIwOWYxNDVlZTFmMjY1MjU3ZmU5OTk5YmM5MDU0N2JhOTg1MDUyYWQ0ZmIzMjBmYjkxNTM4NzgxNjRiZjM1NzJkYzVjNGZlNDkzZTY2NTA2ZjJiMDQiLCJwIjoiZmY2MDA0ODNkYjZhYmZjNWI0NWVhYjc4NTk0YjM1MzNkNTUwZDlmMWJmMmE5OTJhN2E4ZGFhNmRjMzRmODA0NWFkNGU2ZTBjNDI5ZDMzNGVlZWFhZWZkN2UyM2Q0ODEwYmUwMGU0Y2MxNDkyY2JhMzI1YmE4MWZmMmQ1YTViMzA1YThkMTdlYjNiZjRhMDZhMzQ5ZDM5MmUwMGQzMjk3NDRhNTE3OTM4MDM0NGU4MmExOGM0NzkzMzQzOGY4OTFlMjJhZWVmODEyZDY5YzhmNzVlMzI2Y2I3MGVhMDAwYzNmNzc2ZGZkYmQ2MDQ2MzhjMmVmNzE3ZmMyNmQwMmUxNyIsInEiOiJlMjFlMDRmOTExZDFlZDc5OTEwMDhlY2FhYjNiZjc3NTk4NDMwOWMzIiwiZyI6ImM1MmE0YTBmZjNiN2U2MWZkZjE4NjdjZTg0MTM4MzY5YTYxNTRmNGFmYTkyOTY2ZTNjODI3ZTI1Y2ZhNmNmNTA4YjkwZTVkZTQxOWUxMzM3ZTA3YTJlOWUyYTNjZDVkZWE3MDRkMTc1ZjhlYmY2YWYzOTdkNjllMTEwYjk2YWZiMTdjN2EwMzI1OTMyOWU0ODI5YjBkMDNiYmM3ODk2YjE1YjRhZGU1M2UxMzA4NThjYzM0ZDk2MjY5YWE4OTA0MWY0MDkxMzZjNzI0MmEzODg5NWM5ZDViY2NhZDRmMzg5YWYxZDdhNGJkMTM5OGJkMDcyZGZmYTg5NjIzMzM5N2EifSwicHJpbmNpcGFsIjp7ImVtYWlsIjoid2FybmVyQG1vY2tteWlkLmNvbSJ9LCJpYXQiOjEzNDc5OTQ0MDE0MDEsImV4cCI6MTM0Nzk5ODAwMTQwMSwiaXNzIjoibW9ja215aWQuY29tIn0
+    .
+    ddZEPpT3E1BdZfOLABoRZhvnKidzpU8jj0XLUTrbq7khtOqSwVUCk4nYCgIiy73cHLemInurE8Fm_4uwUw27fJ8nP4IM7BBe_5deBEEIAx5I_ckru5JfsSITbmMx-dw5-A8aTsjYnr_amPj1QfELhXKd0F59DQvFm_kiWsZzygmaLh5DGzJqPcqIJDUh6R35Brg6stlwJSXJHtMkXQ7khjStKiN822RjmSOAYUMfMZwe8r-Y3TxmLDeVcNpbjXEy7p2TGdYLuBc9072JHN0y3riuu7DiG4TLZ83SMtzwnyBzBuMRN0gX_JRxEfBkeeEfDpOJ4JAzHeiRTExAoEkpSQ
 
-#### JOSE Spec
-
-The JOSE spec currently does not specify a certificate format beyond JWS signatures.
-If it eventually does, we will consider moving to it.
+Actual Identity Certificates will have no whitespace, no line breaks, and exactly two `.` characters.
 
 ### Identity Assertion
 
