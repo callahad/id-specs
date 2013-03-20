@@ -76,32 +76,22 @@ For example, a public key may look like this:
 
 Identity Certificates are based on an early [JSON Web Token (JWT)](http://self-issued.info/docs/draft-jones-json-web-token-04.html) draft.
 
-Identity Certificates are signed objects with three components:
+Identity Certificates are signed "JWT-like" objects with three components:
 
 1. A JSON header
 2. A JSON payload
 3. A digital signature
 
-Identity Certificates are signed and serialized as follows:
-
-1. The header and payload are independently serialized to strings, base64url-encoded (which uses `-` and `_` instead of `+` and `/`), and stripped of any trailing padding characters (`=`).
-2. The two serialized-and-encoded parts are concatenated together with a single `.` to create a `header.payload` string.
-3. The `header.payload` string is passed as an array of bytes into the digital signature algorithm defined in the header itself.
-4. The byte array returned by the signature algorithm is base64url-encoded and stripped of any trailing padding.
-5. The encoded signature is appended to the `header.payload` string with another `.`, creating the final `header.payload.signature` string.
-
-See Appendix B for an algorithm to re-add padding when parsing the base64url-encoded strings.
+An Identity Certificate should be signed by a either user's Identity Provider or the Fallback Identity Provider.
 
 #### The Header
 
-> TODO: Come up with a better way to refer to the "256" part of "RS256" and review this section.
-
-An Identity Certificate's header is a JSON object with a single property, `"alg"`, which describes the key type and size used to sign the message.
+An Identity Certificate's header is a JSON object with a single property, `"alg"`, which describes the algorithm and security level used in the message signature.
 A typical header looks like:
 
     {"alg": "RS256"}
 
-See Appendix A for supported algorithms and key sizes(?).
+See Appendix A for supported algorithms and security levels.
 
 #### The Payload
 
@@ -135,7 +125,23 @@ And a complete payload may look like:
       }
     }
 
-With the addition of a header and signature, the Identity Certificate becomes a base64url-encoded string which looks like the following (with line breaks added for easier reading):
+#### The Signature
+
+Identity Certificates are signed and serialized as follows:
+
+1. The header and payload are independently serialized to strings, base64url-encoded ([RFC3548 § 4][base64url]), and stripped of any trailing padding characters (`=`).
+2. The two serialized-and-encoded parts are concatenated together with a single `.` to create a `header.payload` string.
+3. The `header.payload` string is passed as an array of bytes into the digital signature algorithm defined in the header itself.
+4. The byte array returned by the signature algorithm is base64url-encoded and stripped of any trailing padding.
+5. The encoded signature is appended to the `header.payload` string with another `.`, creating the final `header.payload.signature` string.
+
+See Appendix B for an algorithm to re-add padding when parsing the base64url-encoded strings.
+
+[base64url]: http://tools.ietf.org/html/rfc3548#section-4
+
+#### Example
+
+The Identity Certificate is serialized as a base64url-encoded `header.payload.signature` string which looks like the following (with line breaks added for easier reading):
 
     eyJhbGciOiJSUzI1NiJ9
     .
@@ -143,90 +149,127 @@ With the addition of a header and signature, the Identity Certificate becomes a 
     .
     ddZEPpT3E1BdZfOLABoRZhvnKidzpU8jj0XLUTrbq7khtOqSwVUCk4nYCgIiy73cHLemInurE8Fm_4uwUw27fJ8nP4IM7BBe_5deBEEIAx5I_ckru5JfsSITbmMx-dw5-A8aTsjYnr_amPj1QfELhXKd0F59DQvFm_kiWsZzygmaLh5DGzJqPcqIJDUh6R35Brg6stlwJSXJHtMkXQ7khjStKiN822RjmSOAYUMfMZwe8r-Y3TxmLDeVcNpbjXEy7p2TGdYLuBc9072JHN0y3riuu7DiG4TLZ83SMtzwnyBzBuMRN0gX_JRxEfBkeeEfDpOJ4JAzHeiRTExAoEkpSQ
 
-Actual Identity Certificates will have no whitespace, no line breaks, and exactly two `.` characters.
+Actual Identity Certificates will have no whitespace and no line breaks.
+Like the example, Identity Certificates have exactly two "`.`" characters.
 
 ### Identity Assertion
 
-An Identity Assertion is a JWT-like object, signed by an Identity Certificate, with the following claims:
+Identity Assertions have the same "JWT-like" structure as Identity Certificates.
 
-* `exp` for expiration (milliseconds-since-epoch)
-* `aud` for the relying party (audience), a URL that includes the scheme and any non-standard port number, like `https://123done.org` or `https://example.com:8080`
+Identity Assertions are signed by an Identity Certificate, and contain the following claims:
+
+* `exp`: the expiration time, when the certificate ceases being valid (in milliseconds-since-epoch)
+* `aud`: the "audience" or "relying party" for whom the assertion is intended
+
+The audience is the intended recipient's URL, including scheme and any non-standard port numbers.
+For example, `https://123done.org` or `https://example.com:8000`.
+
+An Identity Assertion is signed by the user's own private key.
+The user should have a corresponding Identity Certificate for any keypair used for signing Identity Assertions.
+
+#### Example
 
 An assertion might look like (with whitespace added for readability):
 
     eyJhbGciOiJEUzEyOCJ9
-    .eyJleHAiOjEzNDc5OTQ2OTgxNDAsImF1ZCI6Imh0dHA6Ly9sb2NhbGhvc3Q6MTAwMDEifQ
-    .F32SIQWeKNDFSRVdpOWkWrEdKdG-itlsFkPhY_P4eXdtG9YiG24kvw
+    .
+    eyJleHAiOjEzNDc5OTQ2OTgxNDAsImF1ZCI6Imh0dHA6Ly9sb2NhbGhvc3Q6MTAwMDEifQ
+    .
+    F32SIQWeKNDFSRVdpOWkWrEdKdG-itlsFkPhY_P4eXdtG9YiG24kvw
 
-which is a JWT-like object with header:
-
-    {"alg":"DS128"}
-
-and a payload of:
-
-    {'aud': 'http://localhost:10001', 'exp': 1347994698140}
+This example has a header of `{"alg":"DS128"}` and a payload of `{"exp":1347994698140,"aud":"http://localhost:10001"}`.
 
 ### Backed Identity Assertion
 
-A Backed Identity Assertion is a combination of an Identity Assertion and an Identity Certificate that verifiably tie the assertion to an issuing domain.
-The certificate ties a public-key to an Identity (signed by the domain which "owns" that Identity), and the assertion is signed by the public key.
-The combination is expressed as a single string like this:
+An Identity Certificate ties a public key to an Identity.
+An Identity Assertion ties an authentication request to a public key.
 
-    <cert-1>~<identityAssertion>
+By combining an Identity Certificate and an Identity Assertion, a Backed Identity Assertion is able to verifiably tie an authentication request to an Identity.
+Backed Identity Assertions are serialized by concatenating an Identity Certificate and an Identity Assertion with a single tilde (`~`, U+007E) character:
 
-where the cert and the identity assertion are base64url-encoded data structures, as defined above, and the strings are joined by tilde characters (U+007E).
-For example, cert-1 could have an "iss" of the issuing domain (e.g. "example.com"), a "public-key" of the user's certified key, a "principal" of `{"email": "user@example.com"}`, and would be signed by the example.com private key.
-The identityAssertion would have an "exp" and "aud" field, and is signed by the user's private key.
+    certificate~assertion
+
+Both the certificate and the assertion are base64url-encoded data structures, with padding characters stripped, as defined above.
+
+#### Example
 
 A Backed Identity Assertion might look like this (with whitespace added for readability):
 
     eyJhbGciOiJSUzI1NiJ9
-    .eyJwdWJsaWMta2V5Ijp7ImFsZ29yaXRobSI6IkRTIiwieSI6IjJiMGI2ZjQ0ZjU4ZWM0ZmQ1MDQzYmU2YzY4NDMzYmM4MzliYjg2NzI3NmY5MGE5YzdhNjgwNzEwOTcxNjdkMmNhYjJkZjUzYWE1YWU5Mjg4NDNkMTVhNDI0MTIxMjNlZTI0YzQwNjdkN2I4NTg3ODUwZDFmMDlmYTM5Y2M1YmI1MmY4Yjg4NDRjMzEzMjQ0MGYyZTQ1NWFlYTgyMzU1MzViMjhhOGYwMTU4ODIwOWYxNDVlZTFmMjY1MjU3ZmU5OTk5YmM5MDU0N2JhOTg1MDUyYWQ0ZmIzMjBmYjkxNTM4NzgxNjRiZjM1NzJkYzVjNGZlNDkzZTY2NTA2ZjJiMDQiLCJwIjoiZmY2MDA0ODNkYjZhYmZjNWI0NWVhYjc4NTk0YjM1MzNkNTUwZDlmMWJmMmE5OTJhN2E4ZGFhNmRjMzRmODA0NWFkNGU2ZTBjNDI5ZDMzNGVlZWFhZWZkN2UyM2Q0ODEwYmUwMGU0Y2MxNDkyY2JhMzI1YmE4MWZmMmQ1YTViMzA1YThkMTdlYjNiZjRhMDZhMzQ5ZDM5MmUwMGQzMjk3NDRhNTE3OTM4MDM0NGU4MmExOGM0NzkzMzQzOGY4OTFlMjJhZWVmODEyZDY5YzhmNzVlMzI2Y2I3MGVhMDAwYzNmNzc2ZGZkYmQ2MDQ2MzhjMmVmNzE3ZmMyNmQwMmUxNyIsInEiOiJlMjFlMDRmOTExZDFlZDc5OTEwMDhlY2FhYjNiZjc3NTk4NDMwOWMzIiwiZyI6ImM1MmE0YTBmZjNiN2U2MWZkZjE4NjdjZTg0MTM4MzY5YTYxNTRmNGFmYTkyOTY2ZTNjODI3ZTI1Y2ZhNmNmNTA4YjkwZTVkZTQxOWUxMzM3ZTA3YTJlOWUyYTNjZDVkZWE3MDRkMTc1ZjhlYmY2YWYzOTdkNjllMTEwYjk2YWZiMTdjN2EwMzI1OTMyOWU0ODI5YjBkMDNiYmM3ODk2YjE1YjRhZGU1M2UxMzA4NThjYzM0ZDk2MjY5YWE4OTA0MWY0MDkxMzZjNzI0MmEzODg5NWM5ZDViY2NhZDRmMzg5YWYxZDdhNGJkMTM5OGJkMDcyZGZmYTg5NjIzMzM5N2EifSwicHJpbmNpcGFsIjp7ImVtYWlsIjoid2FybmVyQG1vY2tteWlkLmNvbSJ9LCJpYXQiOjEzNDc5OTQ0MDE0MDEsImV4cCI6MTM0Nzk5ODAwMTQwMSwiaXNzIjoibW9ja215aWQuY29tIn0
-    .ddZEPpT3E1BdZfOLABoRZhvnKidzpU8jj0XLUTrbq7khtOqSwVUCk4nYCgIiy73cHLemInurE8Fm_4uwUw27fJ8nP4IM7BBe_5deBEEIAx5I_ckru5JfsSITbmMx-dw5-A8aTsjYnr_amPj1QfELhXKd0F59DQvFm_kiWsZzygmaLh5DGzJqPcqIJDUh6R35Brg6stlwJSXJHtMkXQ7khjStKiN822RjmSOAYUMfMZwe8r-Y3TxmLDeVcNpbjXEy7p2TGdYLuBc9072JHN0y3riuu7DiG4TLZ83SMtzwnyBzBuMRN0gX_JRxEfBkeeEfDpOJ4JAzHeiRTExAoEkpSQ
-    ~eyJhbGciOiJEUzEyOCJ9
-    .eyJleHAiOjEzNDc5OTQ2OTgxNDAsImF1ZCI6Imh0dHA6Ly9sb2NhbGhvc3Q6MTAwMDEifQ
-    .F32SIQWeKNDFSRVdpOWkWrEdKdG-itlsFkPhY_P4eXdtG9YiG24kvw
+    .
+    eyJwdWJsaWMta2V5Ijp7ImFsZ29yaXRobSI6IkRTIiwieSI6IjJiMGI2ZjQ0ZjU4ZWM0ZmQ1MDQzYmU2YzY4NDMzYmM4MzliYjg2NzI3NmY5MGE5YzdhNjgwNzEwOTcxNjdkMmNhYjJkZjUzYWE1YWU5Mjg4NDNkMTVhNDI0MTIxMjNlZTI0YzQwNjdkN2I4NTg3ODUwZDFmMDlmYTM5Y2M1YmI1MmY4Yjg4NDRjMzEzMjQ0MGYyZTQ1NWFlYTgyMzU1MzViMjhhOGYwMTU4ODIwOWYxNDVlZTFmMjY1MjU3ZmU5OTk5YmM5MDU0N2JhOTg1MDUyYWQ0ZmIzMjBmYjkxNTM4NzgxNjRiZjM1NzJkYzVjNGZlNDkzZTY2NTA2ZjJiMDQiLCJwIjoiZmY2MDA0ODNkYjZhYmZjNWI0NWVhYjc4NTk0YjM1MzNkNTUwZDlmMWJmMmE5OTJhN2E4ZGFhNmRjMzRmODA0NWFkNGU2ZTBjNDI5ZDMzNGVlZWFhZWZkN2UyM2Q0ODEwYmUwMGU0Y2MxNDkyY2JhMzI1YmE4MWZmMmQ1YTViMzA1YThkMTdlYjNiZjRhMDZhMzQ5ZDM5MmUwMGQzMjk3NDRhNTE3OTM4MDM0NGU4MmExOGM0NzkzMzQzOGY4OTFlMjJhZWVmODEyZDY5YzhmNzVlMzI2Y2I3MGVhMDAwYzNmNzc2ZGZkYmQ2MDQ2MzhjMmVmNzE3ZmMyNmQwMmUxNyIsInEiOiJlMjFlMDRmOTExZDFlZDc5OTEwMDhlY2FhYjNiZjc3NTk4NDMwOWMzIiwiZyI6ImM1MmE0YTBmZjNiN2U2MWZkZjE4NjdjZTg0MTM4MzY5YTYxNTRmNGFmYTkyOTY2ZTNjODI3ZTI1Y2ZhNmNmNTA4YjkwZTVkZTQxOWUxMzM3ZTA3YTJlOWUyYTNjZDVkZWE3MDRkMTc1ZjhlYmY2YWYzOTdkNjllMTEwYjk2YWZiMTdjN2EwMzI1OTMyOWU0ODI5YjBkMDNiYmM3ODk2YjE1YjRhZGU1M2UxMzA4NThjYzM0ZDk2MjY5YWE4OTA0MWY0MDkxMzZjNzI0MmEzODg5NWM5ZDViY2NhZDRmMzg5YWYxZDdhNGJkMTM5OGJkMDcyZGZmYTg5NjIzMzM5N2EifSwicHJpbmNpcGFsIjp7ImVtYWlsIjoid2FybmVyQG1vY2tteWlkLmNvbSJ9LCJpYXQiOjEzNDc5OTQ0MDE0MDEsImV4cCI6MTM0Nzk5ODAwMTQwMSwiaXNzIjoibW9ja215aWQuY29tIn0
+    .
+    ddZEPpT3E1BdZfOLABoRZhvnKidzpU8jj0XLUTrbq7khtOqSwVUCk4nYCgIiy73cHLemInurE8Fm_4uwUw27fJ8nP4IM7BBe_5deBEEIAx5I_ckru5JfsSITbmMx-dw5-A8aTsjYnr_amPj1QfELhXKd0F59DQvFm_kiWsZzygmaLh5DGzJqPcqIJDUh6R35Brg6stlwJSXJHtMkXQ7khjStKiN822RjmSOAYUMfMZwe8r-Y3TxmLDeVcNpbjXEy7p2TGdYLuBc9072JHN0y3riuu7DiG4TLZ83SMtzwnyBzBuMRN0gX_JRxEfBkeeEfDpOJ4JAzHeiRTExAoEkpSQ
+    ~
+    eyJhbGciOiJEUzEyOCJ9
+    .
+    eyJleHAiOjEzNDc5OTQ2OTgxNDAsImF1ZCI6Imh0dHA6Ly9sb2NhbGhvc3Q6MTAwMDEifQ
+    .
+    F32SIQWeKNDFSRVdpOWkWrEdKdG-itlsFkPhY_P4eXdtG9YiG24kvw
 
+### Declaration of Support
 
-Multiple certificates in a single backed assertion will be used by certificate-chaining, which is not defined or implemented yet.
-The elements of these chains will also be joined by tilde characters, e.g.:
+Domains wishing to serve as Identity Providers must publish necessary metadata in a well-formed JSON document.
+This declaration of support must be available over SSL/TLS at the path `/.well-known/browserid`, and must be served with the `application/json` Content-Type.
 
-    <cert-1>~<cert-2>~<cert-3>~<identityAssertion>.
+By publishing a support declaration, a domain may opt to:
 
-The first element will be certified by the issuing domain's private key, and each subsequent element will be certified by the previous one.
+1. Disable first-party support for BrowserID
+2. Delegate authority to another domain
+3. Directly act as an Identity Provider
 
-### BrowserID Support Document
+Each option takes precedence over those below it in the list.
 
-A BrowserID support document MUST be a well-formed JSON document with at least these three fields: `public-key`, `authentication`, and `provisioning`.
-The document MAY contain additional JSON fields.
+#### Disabling Support
 
-The value of the `public-key` field MUST be a Public Key object as described above.
+To explicitly disable first-party support for the BrowserID protocol, the support document must include the following key/value pair:
 
-The value of the `authentication` field MUST be a relative reference to a URI, as defined by [RFC3986](https://tools.ietf.org/html/rfc3986).
+    "disabled": true
 
-The value of the `provisioning` field MUST also be a relative reference to a URI.
+Upon encountering the above declaration, a user agent may opt to fail over to the Fallback Identity Provider.
+
+Behavior is undefined for values other than `true`.
+
+The document may contain additional fields.
+
+#### Delegating Authority
+
+To delegate authority to another domain, the support document must include an `"authority"` key whose value is a string indicating the appointed domain.
+For example:
+
+    "authority": "example.com"
+
+If this key exists but its value is not a string, then the entire document must be treated as invalid.
+
+The document may contain additional fields.
+
+#### Acting as an Identity Provider
+
+To act as an identity provider, the support document must include three keys: `"public-key"`, `"authentication"`, and `"provisioning"`.
+
+The value of the `"public-key"` field must be a serialized Public Key object, as described above.
+
+The value of the `"authentication"` field must be an absolute path as defined by [RFC3986 § 3.3](https://tools.ietf.org/html/rfc3986#section-3.3).
+As per the RFC, it must be a string that starts with a single `/`.
+
+The value of the `"provisioning"` field must be an absolute path as defined by [RFC3986 § 3.3](https://tools.ietf.org/html/rfc3986#section-3.3).
+As per the RFC, it must be a string that starts with a single `/`.
 
 For example:
 
-     {
-       "public-key": {
-           "algorithm": "RS",
-           ...,
-        },
-        "authentication": "/browserid/sign_in.html",
-        "provisioning": "/browserid/provision.html"
-     }
+    {
+      "public-key": {
+        "algorithm": "RS",
+        "n": "86061325954349334652717176194933501380163473810580508298022784173603523955517920878372668521821316636170415518513079880549428668891567183506489511506717822061355089182001391293358954276219467190309016854424228138432378435749105061015329381854517472037557567653805460361242580977135824280738197386742061208063",
+        "e": "65537"
+      },
+      "authentication": "/browserid/sign_in.html",
+      "provisioning": "/browserid/provision.html"
+    }
 
-#### BrowserID Delegated Support Document
+If any of these three keys are missing from this type of support document, then the entire document must be treated as invalid.
 
-A BrowserID delegated-support document MUST be a well-formed JSON document with at least one field: `authority`.
-This field MUST be a domain name.
-
-For example:
-
-     {
-        "authority": "otherexample.com"
-     }
+The document may contain additional fields.
 
 Web-Site Signin Flow
 --------------------
