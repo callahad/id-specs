@@ -271,6 +271,216 @@ If any of these three keys are missing from this type of support document, then 
 
 The document may contain additional fields.
 
+API: Relying Parties
+--------------------
+
+There are three versions of the BrowserID API for Relying Parties.
+
+Each API defines functions under the `navigator.id` namespace object.
+Named options are passed to these functions as properties of a JavaScript object.
+For example: `navigator.id.example({"option_a": true, "option_b": "foo"});`
+
+Only a single version of the API may be used on a single page.
+If multiple versions of the API are used on the same page, the user agent should immediately throw an exception.
+
+### The Observer API
+
+The Observer API defines three functions: `watch`, `request`, and `logout`.
+
+#### navigator.id.watch(&lt;options&gt;);
+
+Register callbacks to handle login and logout actions.
+
+Required parameters:
+
+<dl>
+  <dt>`onlogin`:</dt>
+  <dd>
+    A callback that will be invoked when the user logs in.
+    A single argument is passed to the callback: a serialized Backed Identity Assertion.
+    This function is invoked automatically on page load if the user agent wishes to be logged in, but `loggedInUser` is undefined, `null`, or an unrecognized String.
+  </dd>
+
+  <dt>`onlogout`:</dt>
+  <dd>
+    A callback that will be invoked when the user logs out.
+    This function is invoked automatically on page load if the user agent does not wish to be logged in, but `loggedInUser` is not `null`.
+  </dd>
+</dl>
+
+Optional parameters:
+
+<dl>
+  <dt>`loggedInUser`</dt>
+  <dd>
+    Exposes the Relying Party's current session state to the user agent, so that the user agent can determine which callback to invoke automatically at page load: `onlogin`, `onlogout`, or `onmatch`.
+    This parameter may be undefined, `null`, or a String containing the current user's email address.
+  </dd>
+
+  <dt>`onmatch`</dt>
+  <dd>
+    A callback that will be invoked when `loggedInUser` matches the user agent's preferred state.
+    This function is only invoked automatically on page load.
+  </dd>
+
+  <dt>`onready`</dt>
+  <dd>
+    A callback that will be invoked when the user agent is initialized and able to process calls to `id.request` and `id.logout`.
+    The `onready` callback will be invoked immediately after any automatic invocations of `onlogin`, `onlogout`, or `onmatch`.
+    By waiting to display UI until `onready` is called, relying parties can avoid UI flicker in cases where the user agent's preferred state is out of sync with the site's session.
+  </dd>
+</dl>
+
+Deprecated parameters:
+
+<dl>
+  <dt>`loggedInEmail`</dt>
+  <dd>
+    Deprecated alias for `loggedInUser`.
+    Behaves identically.
+    If both `loggedInEmail` and `loggedInUser` are supplied, the user agent should immediately throw an exception.
+  </dd>
+</dl>
+
+
+#### navigator.id.request(&lt;options&gt;);
+
+Request an identity from the user.
+This will cause a dialog to be opened to prompt the user for an Identity to use to log into the site.
+
+This function must be invoked from within a click handler.
+
+Optional parameters:
+
+<dl>
+  <dt>`oncancel`</dt>
+  <dd>
+    A callback that will be invoked if the user cancels the login dialog.
+  </dd>
+
+  <dt>`privacyPolicy`</dt>
+  <dd>
+    Full URL or absolute path to the Relying Party's privacy policy.
+    Ignored if `termsOfService` is not set.
+  </dd>
+
+  <dt>`siteLogo`</dt>
+  <dd>
+    Absolute path to an image of the Relying Party's logo.
+    This image is displayed in the login dialog.
+    Images larger than 100 x 100 pixels will be resized.
+    This must start with a single "`/`" and be available over SSL/TLS.
+  </dd>
+
+  <dt>`siteName`</dt>
+  <dd>
+    A "human-friendly" String containing the Relying Party's name.
+    This String is displayed in the login dialog.
+  </dd>
+
+  <dt>`termsOfService`</dt>
+  <dd>
+    Full URL or absolute path to the Relying Party's terms of service.
+    Ignored if `privacyPolicy` is not set.
+  </dd>
+</dl>
+
+Deprecated parameters:
+
+<dl>
+  <dt>`privacyURL`</dt>
+  <dd>
+    Deprecated aliases for `privacyPolicy`.
+    Behaves identically.
+    If both `privacyURL` and `privacyPolicy` are supplied, the user agent should immediately throw an exception.
+  </dd>
+
+  <dt>`tosURL`</dt>
+  <dd>
+    Deprecated aliases for `termsOfService`.
+    Behaves identically.
+    If both `tosURL` and `termsOfService` are supplied, the user agent should immediately throw an exception.
+  </dd>
+</dl>
+
+#### navigator.id.logout();
+
+Log the user out of a Relying Party.
+
+This function must be invoked from within a click handler.
+
+Calling this function causes the `onlogout` callback registered with `id.watch` to be invoked.
+
+### The ".get" API
+
+This API only exposes a single function, `id.get`.
+
+#### navigator.id.get(loginCallback, &lt;options&gt;);
+
+Request an identity from the user.
+This will cause a dialog to be opened to prompt the user for an Identity to use to log into the site.
+
+This function must be invoked from within a click handler.
+
+If the user selects an Identity, the `loginCallback` will be invoked and passed a serialized Backed Identity Assertion as its first parameter.
+If the user cancels the dialog, the `loginCallback` will be invoked and passed `null` as its first parameter.
+
+Optional parameters:
+
+<dl>
+  <dt>`privacyPolicy`</dt>
+  <dd>
+    Full URL or absolute path to the Relying Party's privacy policy.
+    Ignored if `termsOfService` is not set.
+  </dd>
+
+  <dt>`siteLogo`</dt>
+  <dd>
+    Absolute path to an image of the Relying Party's logo.
+    This image is displayed in the login dialog.
+    Images larger than 100 x 100 pixels will be resized.
+    This must start with a single "`/`" and be available over SSL/TLS.
+  </dd>
+
+  <dt>`siteName`</dt>
+  <dd>
+    A "human-friendly" String containing the Relying Party's name.
+    This String is displayed in the login dialog.
+  </dd>
+
+  <dt>`termsOfService`</dt>
+  <dd>
+    Full URL or absolute path to the Relying Party's terms of service.
+    Ignored if `privacyPolicy` is not set.
+  </dd>
+</dl>
+
+Deprecated parameters:
+
+<dl>
+  <dt>`privacyURL`</dt>
+  <dd>
+    Deprecated aliases for `privacyPolicy`.
+    Behaves identically.
+    If both `privacyURL` and `privacyPolicy` are supplied, the user agent should immediately throw an exception.
+  </dd>
+
+  <dt>`tosURL`</dt>
+  <dd>
+    Deprecated aliases for `termsOfService`.
+    Behaves identically.
+    If both `tosURL` and `termsOfService` are supplied, the user agent should immediately throw an exception.
+  </dd>
+</dl>
+
+### The ".getVerifiedEmail" API
+
+This API is deprecated, and only exposes a single function, `id.getVerifiedEmail`.
+
+#### navigator.id.get(loginCallback);
+
+This function behaves identically to `id.get`, as defined above, except that it ignores all optional parameters.
+
 Web-Site Signin Flow
 --------------------
 
@@ -344,46 +554,6 @@ This means that there are three possible sequences of callabacks:
     logoutButton.onclick = function() {
       navigator.id.logout(); // this will cause `onlogout` to be invoked.
     };
-
-API: Relying Parties
---------------------
-
-### navigator.id.watch(&lt;options&gt;);
-
-Register callbacks to be notified when the user logs in or out.
-The option block has the following properties:
-
-  * `loggedInUser` *(optional)* - The email address of the currently logged in user.
-    May be `undefined`, `null` or `false` (indicating that no user is logged in), or an email address (as a String).
-    If omitted or `undefined`, either `onlogin` or `onlogout` will be invoked on every page load.
-    If `null`, `false`, or an email address, then the `onlogin` or `onlogout` callback will not be invoked if the user's login state is consistent with the specified value.
-  * `loggedInEmail` *(optional)* - Old, deprecated name for `loggedInUser`.
-     If provided, it should behave identically to `loggedInUser`.
-     If both `loggedInUser` and `loggedInEmail` are provided, the user agent should immediately throw an exception.
-  * `onlogin` *(required)* - A callback that will be invoked and passed a single argument, an assertion, when the user logs in.
-  * `onlogout` *(required)* - A callback that will be invoked when the user logs out.
-  * `onready` *(optional)* - A callback that will always be called once the navigator.id service is initialized (after `onlogin` or `onlogout` have been called).
-    By waiting to display UI until this point, you can avoid UI flicker in the case where your session is out of sync with BrowserID.
-
-### navigator.id.request(&lt;options&gt;);
-
-Request an identity from the user.
-This will cause a dialog to be opened to prompt the user for an email address to use to log into the site.
-This function must be invoked from within a click handler.
-The argument is an options block which may contain the following properties:
-
-  * `requiredEmail` *(optional)* - An email address that the user must use to log in.
-    When provided, the user may not select a different address, but may cancel the sign-in.
-  * `privacyPolicy` - URL to site's privacy policy.
-    When provided, a link will be displayed in the sign-in dialog.
-  * `termsOfService` - URL to site's terms of service.
-    When provided, a link will be displayed in the sign-in dialog.
-  * `oncancel` - a callback that will be invoked if the user refuses to share an identity with the site.
-
-### navigator.id.logout();
-
-A function that should be invoked when a user wishes to logout of the current site (for instance, when clicking on an in-content logout button).
-Will cause the `onlogout` callback passed to `navigator.id.watch()` to be invoked.
 
 Identity Provisioning Flow
 --------------------------
