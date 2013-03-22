@@ -297,7 +297,7 @@ Required parameters:
   <dt>`onlogin`:</dt>
   <dd>
     A callback that will be invoked when the user logs in.
-    A single argument is passed to the callback: a serialized Backed Identity Assertion.
+    A single parameter is passed to the callback: a serialized Backed Identity Assertion.
     This function is invoked automatically on page load if the user agent wishes to be logged in, but `loggedInUser` is undefined, `null`, or an unrecognized String.
   </dd>
 
@@ -480,6 +480,67 @@ This API is deprecated, and only exposes a single function, `id.getVerifiedEmail
 #### navigator.id.get(loginCallback);
 
 This function behaves identically to `id.get`, as defined above, except that it ignores all optional parameters.
+
+API: Identity Providers
+-----------------------
+
+The BrowserID API for Identity Providers is split into two sections: authentication and provisioning.
+
+This API defines functions under the `navigator.id` namespace object.
+
+### Authentication
+
+Authentication takes place on a webpage displayed to the user.
+
+The authentication flow is initiated and completed via a series of JavaScript functions.
+
+#### navigator.id.beginAuthentication(identityCallback);
+
+Invoke this function to begin the authentication process.
+
+The user agent will then invoke the `identityCallback` and pass it a single parameter: the user's chosen Identity as a String.
+This allows the Identity Provider to determine who the user is claiming to be.
+
+#### navigator.id.completeAuthentication();
+
+If the user successfully authenticates, invoke this function to complete the authentication process.
+
+#### navigator.id.raiseAuthenticationFailure();
+
+If the user is unable to authenticate, invoke this function to abort the authentication process.
+
+### Provisioning
+
+Provisioning of Identity Certificates takes place on a webpage hidden from the user.
+
+The provisioning flow is initiated and completed via a series of JavaScript functions.
+
+#### navigator.id.beginProvisioning(certRequestCallback);
+
+Invoke this function to begin the provisioning process.
+
+The user agent will then invoke the `certRequestCallback` and pass it two parameters: the user's email address as a String, and a desired certificate duration in seconds.
+
+The certificate duration is not prescriptive.
+It should be considered an upper-bound.
+
+#### navigator.id.genKeyPair(pubkeyCallback);
+
+Request a public key to sign from the user.
+
+This function should be invoked once the Identity Provider is able to confirm that the user does have the authority to access the Identity provided to the `certRequestCallback`.
+
+The user agent will then generate a public key and invoke `pubkeyCallback` with the user's public key as its first parameter.
+
+#### navigator.id.registerCertificate(idCert);
+
+Return a signed and serialized Identity Certificate for storage by the user agent.
+
+#### navigator.id.raiseProvisioningFailure();
+
+If the Identity Provider is unable to provision the user, due to error or lack of authentication, invoke this function to temporarily cancel provisioning.
+
+When invoked, the user agent will display the authentication page to the user and wait for `id.completeAuthentication` to be called before re-attempting provisioning.
 
 Web-Site Signin Flow
 --------------------
